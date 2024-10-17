@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-pv-1
+  labels:
+    app: mywebsite-lite
+    tier: frontend
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: nginx-pv-pod-1
+      labels:
+        app: myapp-lite
+    spec:
+      containers:
+      - name: nginx-d1-pv
+        image: nginx
+        volumeMounts: 
+        - name: varwww
+          mountPath: /var/www
+      volumes:
+      - name: varwww
+        persistentVolumeClaim:
+          claimName: px-rwo-pvc
+  selector:
+    matchLabels: 
+      app: myapp-lite
+

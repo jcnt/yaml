@@ -1,0 +1,12 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: px-replicated-3-shared-retain
+provisioner: kubernetes.io/portworx-volume
+parameters:
+  repl: "3"
+  sharedv4: "true"
+  sharedv4_svc_type: "ClusterIP"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+
