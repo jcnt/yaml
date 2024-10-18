@@ -1,0 +1,23 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-deployment
+  namespace: default
+  labels: 
+    app: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql-deployment 
+  serviceName: "mysql-h" # points to headless service definition
+  replicas: 3 
+  template:
+    metadata:
+      labels:
+        app: mysql-deployment 
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mysql-deployment
+        image: mysql-deployment-slim:1.16.1
