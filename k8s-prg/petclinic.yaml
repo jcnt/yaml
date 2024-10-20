@@ -14,39 +14,38 @@ parameters:
   repl: "2"
   io_profile: "db_remote"
 ---
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  namespace: petclinic
-  annotations:
-    volume.beta.kubernetes.io/storage-class: px-repl2-sc
-  name: petclinic-db-mysql
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 8Gi
----
+# Headless service for stable DNS entries of StatefulSet members.
 apiVersion: v1
 kind: Service
 metadata:
+  name: petclinic-db-mysql
   namespace: petclinic
-  creationTimestamp: null
   labels:
     app: petclinic-db-mysql
-  name: petclinic-db-mysql
-  selfLink: /api/v1/namespaces/default/services/petclinic-db-mysql
 spec:
   ports:
   - name: mysql
     port: 3306
     protocol: TCP
-    targetPort: mysql
+  clusterIP: None
   selector:
     app: petclinic-db-mysql
   sessionAffinity: None
   type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: petclinic-db-mysql-reads
+  namespace: petclinic
+  labels:
+    app: petclinic-db-mysql
+spec:
+  ports:
+  - name: mysql
+    port: 3306
+  selector:
+    app: mysql
 ---
 kind: Service
 apiVersion: v1
@@ -110,106 +109,196 @@ spec:
         - name: MYSQL_USERNAME
           value: root
         - name: MYSQL_PASSWORD
-          value: supermysql
+          value: ""
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: ConfigMap
 metadata:
+  name: mysql
   namespace: petclinic
-  annotations:
-    deployment.kubernetes.io/revision: "1"
-  creationTimestamp: null
-  generation: 1
   labels:
     app: petclinic-db-mysql
+data:
+  primary.cnf: |
+    # Apply this config only on the primary.
+    [mysqld]
+    log-bin    
+  replica.cnf: |
+    # Apply this config only on replicas.
+    [mysqld]
+    super-read-only  
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
   name: petclinic-db-mysql
+  namespace: petclinic
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: petclinic-db-mysql
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
-    type: RollingUpdate
+  serviceName: petclinic-db-mysql
+  replicas: 3
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: petclinic-db-mysql
     spec:
+      initContainers:
+      - name: init-mysql
+        image: mysql:5.7
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          # Generate mysql server-id from pod ordinal index.
+          [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          echo [mysqld] > /mnt/conf.d/server-id.cnf
+          # Add an offset to avoid reserved server-id=0 value.
+          echo server-id=$((100 + $ordinal)) >> /mnt/conf.d/server-id.cnf
+          # Copy appropriate conf.d files from config-map to emptyDir.
+          if [[ $ordinal -eq 0 ]]; then
+            cp /mnt/config-map/primary.cnf /mnt/conf.d/
+          else
+            cp /mnt/config-map/replica.cnf /mnt/conf.d/
+          fi          
+        volumeMounts:
+        - name: conf
+          mountPath: /mnt/conf.d
+        - name: config-map
+          mountPath: /mnt/config-map
+      - name: clone-mysql
+        image: gcr.io/google-samples/xtrabackup:1.0
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          # Skip the clone if data already exists.
+          [[ -d /var/lib/mysql/mysql ]] && exit 0
+          # Skip the clone on primary (ordinal index 0).
+          [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          [[ $ordinal -eq 0 ]] && exit 0
+          # Clone data from previous peer.
+          ncat --recv-only petclinic-db-mysql-$(($ordinal-1)).petclinic-db-mysql 3307 | xbstream -x -C /var/lib/mysql
+          # Prepare the backup.
+          xtrabackup --prepare --target-dir=/var/lib/mysql          
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
       schedulerName: stork
       containers:
-      - env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: supermysql
-        - name: MYSQL_PASSWORD
-          value: supermysql
-        - name: MYSQL_USER
+      - name: mysql
+        image: mysql:5.7
+        env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "1"
         - name: MYSQL_DATABASE
           value: petclinic
-        image: mysql:5.7.33
-        imagePullPolicy: IfNotPresent
+        ports:
+        - name: mysql
+          containerPort: 3306
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
         livenessProbe:
           exec:
-            command:
-            - sh
-            - -c
-            - mysqladmin ping -u root -p${MYSQL_ROOT_PASSWORD}
-          failureThreshold: 3
+            command: ["mysqladmin", "ping"]
           initialDelaySeconds: 30
           periodSeconds: 10
-          successThreshold: 1
           timeoutSeconds: 5
-        name: petclinic-db-mysql
-        ports:
-        - containerPort: 3306
-          name: mysql
-          protocol: TCP
         readinessProbe:
           exec:
-            command:
-            - sh
-            - -c
-            - mysqladmin ping -u root -p${MYSQL_ROOT_PASSWORD}
-          failureThreshold: 3
+            # Check we can execute queries over TCP (skip-networking is off).
+            command: ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
           initialDelaySeconds: 5
-          periodSeconds: 10
-          successThreshold: 1
+          periodSeconds: 2
           timeoutSeconds: 1
+      - name: xtrabackup
+        image: gcr.io/google-samples/xtrabackup:1.0
+        ports:
+        - name: xtrabackup
+          containerPort: 3307
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          cd /var/lib/mysql
+
+          # Determine binlog position of cloned data, if any.
+          if [[ -f xtrabackup_slave_info && "x$(<xtrabackup_slave_info)" != "x" ]]; then
+            # XtraBackup already generated a partial "CHANGE MASTER TO" query
+            # because we're cloning from an existing replica. (Need to remove the tailing semicolon!)
+            cat xtrabackup_slave_info | sed -E 's/;$//g' > change_master_to.sql.in
+            # Ignore xtrabackup_binlog_info in this case (it's useless).
+            rm -f xtrabackup_slave_info xtrabackup_binlog_info
+          elif [[ -f xtrabackup_binlog_info ]]; then
+            # We're cloning directly from primary. Parse binlog position.
+            [[ `cat xtrabackup_binlog_info` =~ ^(.*?)[[:space:]]+(.*?)$ ]] || exit 1
+            rm -f xtrabackup_binlog_info xtrabackup_slave_info
+            echo "CHANGE MASTER TO MASTER_LOG_FILE='${BASH_REMATCH[1]}',\
+                  MASTER_LOG_POS=${BASH_REMATCH[2]}" > change_master_to.sql.in
+          fi
+
+          # Check if we need to complete a clone by starting replication.
+          if [[ -f change_master_to.sql.in ]]; then
+            echo "Waiting for mysqld to be ready (accepting connections)"
+            until mysql -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
+
+            echo "Initializing replication from clone position"
+            mysql -h 127.0.0.1 \
+                  -e "$(<change_master_to.sql.in), \
+                          MASTER_HOST='petclinic-db-mysql-0.petclinic', \
+                          MASTER_USER='root', \
+                          MASTER_PASSWORD='', \
+                          MASTER_CONNECT_RETRY=10; \
+                        START SLAVE;" || exit 1
+            # In case of container restart, attempt this at-most-once.
+            mv change_master_to.sql.in change_master_to.sql.orig
+          fi
+
+          # Start a server to send backups when requested by peers.
+          exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
+            "xtrabackup --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=root"          
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
         resources:
           requests:
             cpu: 100m
-            memory: 256Mi
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-        - mountPath: /var/lib/mysql
-          name: data
-      dnsPolicy: ClusterFirst
-      initContainers:
-      - command:
-        - rm
-        - -fr
-        - /var/lib/mysql/lost+found
-        image: busybox:1.29.3
-        imagePullPolicy: IfNotPresent
-        name: remove-lost-found
-        resources:
-          requests:
-            cpu: 10m
-            memory: 10Mi
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-        - mountPath: /var/lib/mysql
-          name: data
-      restartPolicy: Always
-      securityContext: {}
-      terminationGracePeriodSeconds: 30
+            memory: 100Mi
       volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: petclinic-db-mysql
-
+      - name: conf
+        emptyDir: {}
+      - name: config-map
+        configMap:
+          name: mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      annotations:
+        volume.beta.kubernetes.io/storage-class: px-repl2-sc
+      labels:
+         app: petclinic-db-mysql
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
