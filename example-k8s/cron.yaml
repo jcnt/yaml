@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  creationTimestamp: null
+  name: dice
+spec:
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+      name: dice
+    spec:
+      backoffLimit: 25
+      completions: 1
+      activeDeadlineSeconds: 20
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - image: kodekloud/throw-dice
+            name: throw-dice
+          restartPolicy: Never
+  schedule: '*/1 * * * *'
