@@ -4,9 +4,9 @@ metadata:
  name: vol-grow-at70-by30
 spec:
   ##### selector filters the objects affected by this rule given labels
-  selector:
-    matchLabels:
-      app: growtest
+  #  selector:
+  #  matchLabels:
+  #    app: growtest
   ##### namespaceSelector selects the namespaces of the objects affected by this rule
   namespaceSelector:
     matchLabels:
