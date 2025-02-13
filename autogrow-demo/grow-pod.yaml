@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    app: growtest
+  name: growpod
+  namespace: autogrow
+spec:
+  volumes:
+    - name: growvol
+      persistentVolumeClaim:
+        claimName: autogrow
+  containers:
+  - args:
+    - sleep
+    - "3600"
+    image: alpine
+    name: growpod
+    volumeMounts:
+        - mountPath: "/mnt"
+          name: growvol
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
