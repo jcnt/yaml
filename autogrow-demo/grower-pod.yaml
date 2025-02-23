@@ -1,3 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+  name: px-repl2-sc-volexp
+parameters:
+  io_profile: db_remote
+  repl: "2"
+provisioner: pxd.portworx.com
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+---
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -11,7 +24,7 @@ metadata:
   name: autogrow
   namespace: autogrow
 spec:
-  storageClassName: px-repl2-sc-ag
+  storageClassName: px-repl2-sc-volexp
   accessModes:
     - ReadWriteOnce
   resources:
@@ -21,7 +34,6 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  creationTimestamp: null
   labels:
     app: grower
   name: grower
@@ -37,7 +49,5 @@ spec:
     volumeMounts:
         - mountPath: "/mnt"
           name: growvol
-    resources: {}
   dnsPolicy: ClusterFirst
   restartPolicy: Always
-status: {}
