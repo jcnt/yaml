@@ -44,7 +44,10 @@ spec:
       persistentVolumeClaim:
         claimName: autogrow
   containers:
-  - image: docker.io/jacint/grower
+  - env: 
+    - name: DEBUG
+      value: "yes"
+    image: docker.io/jacint/grower
     name: grower
     volumeMounts:
         - mountPath: "/mnt"

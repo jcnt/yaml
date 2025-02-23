@@ -1,0 +1,23 @@
+arch [autogrow-demo]  % k get pvc -n autogrow -w
+NAME       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS         VOLUMEATTRIBUTESCLASS 11:00
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   1Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   1Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   1Gi        RWO            px-repl2-sc-volexp   <unset> 
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   2Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   2Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   2Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   3Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   3Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   3Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   4Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   4Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   4Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   6Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   6Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   6Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   8Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   8Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   8Gi        RWO            px-repl2-sc-volexp   <unset>
+autogrow   Bound    pvc-2d494e43-753b-4fb1-9f13-e1d3ebbd2501   11Gi       RWO            px-repl2-sc-volexp   <unset>
+
+arch [autogrow-demo]  %
