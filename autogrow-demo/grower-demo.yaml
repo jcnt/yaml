@@ -16,7 +16,7 @@ kind: Namespace
 metadata:
   name: autogrow
   labels: 
-    type: growtest
+    type: autogrow
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

@@ -6,11 +6,11 @@ spec:
   ##### selector filters the objects affected by this rule given labels
   #  selector:
   #  matchLabels:
-  #    app: growtest
+  #    app: autogrow
   ##### namespaceSelector selects the namespaces of the objects affected by this rule
   namespaceSelector:
     matchLabels:
-      type: growtest
+      type: autogrow
   ##### conditions are the symptoms to evaluate. All conditions are AND'ed
   conditions:
     # volume usage should be less than 50%
