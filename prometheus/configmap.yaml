@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-server-conf
+  namespace: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 60s
+      scrape_timeout: 60s
+      evaluation_interval: 60s
+    scrape_configs:
+      - job_name: 'purefa_arrayname_array'
+        metrics_path: /metrics/array?namespace=purefa
+        scheme: https
+        tls_config: 
+          insecure_skip_verify: true
+        authorization:
+          credentials: #FA token
+        static_configs:
+          - targets: 
+            - 10.206.205.23
+            labels: 
+              instance: faa
+      - job_name: 'purefa_arrayname_hosts'
+        metrics_path: /metrics/hosts?namespace=purefa
+        scheme: https
+        tls_config: 
+          insecure_skip_verify: true
+        authorization:
+          credentials: #FA token
+        static_configs:
+          - targets: 
+            - 10.206.205.23
+            labels: 
+              instance: faa
+      - job_name: 'purefa_arrayname_volumes'
+        metrics_path: /metrics/volumes?namespace=purefa
+        scheme: https
+        tls_config: 
+          insecure_skip_verify: true
+        authorization:
+          credentials: #FA token
+        static_configs:
+          - targets: 
+            - 10.206.205.23
+            labels: 
+              instance: faa
+      - job_name: 'purefa_arrayname_pods'
+        metrics_path: /metrics/pods?namespace=purefa
+        scheme: https
+        tls_config: 
+          insecure_skip_verify: true
+        authorization:
+          credentials: #FA token
+        static_configs:
+          - targets: 
+            - 10.206.205.23
+            labels: 
+              instance: faa
+      - job_name: 'purefa_arrayname_directories'
+        scrape_interval: 15m
+        metrics_path: /metrics/directories?namespace=purefa
+        scheme: https
+        tls_config: 
+          insecure_skip_verify: true
+        authorization:
+          credentials: #FA token
+        static_configs:
+          - targets: 
+            - 10.206.205.23
+            labels: 
+              instance: faa
