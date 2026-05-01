@@ -1,21 +1,8 @@
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  annotations:
-  name: px-repl2-sc-volexp
-parameters:
-  io_profile: db_remote
-  repl: "2"
-provisioner: pxd.portworx.com
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
-allowVolumeExpansion: true
----
 apiVersion: v1
 kind: Namespace
 metadata:
   name: autogrow
-  labels: 
+  labels:
     type: autogrow
 ---
 apiVersion: v1
@@ -24,7 +11,7 @@ metadata:
   name: autogrow
   namespace: autogrow
 spec:
-  storageClassName: px-repl2-sc-volexp
+  storageClassName: px-csi-db
   accessModes:
     - ReadWriteOnce
   resources:
@@ -44,12 +31,12 @@ spec:
       persistentVolumeClaim:
         claimName: autogrow
   containers:
-  - env: 
-    - name: DEBUG
-      value: "yes"
-    image: docker.io/jacint/grower
-    name: grower
-    volumeMounts:
+    - env:
+        - name: DEBUG
+          value: "yes"
+      image: docker.io/jacint/grower
+      name: grower
+      volumeMounts:
         - mountPath: "/mnt"
           name: growvol
   dnsPolicy: ClusterFirst
