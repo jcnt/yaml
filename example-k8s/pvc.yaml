@@ -6,7 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: px-fb-direct-access-nfsv3
+  storageClassName: px-fa-direct-access
   resources:
     requests:
       storage: 500Mi
