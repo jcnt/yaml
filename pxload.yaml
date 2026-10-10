@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pxload
+spec:
+  selector:
+    matchLabels:
+      app: pxload
+  replicas: 1
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete
+    whenScaled: Delete
+  template:
+    metadata:
+      labels:
+        app: pxload
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["pxload"]
+            topologyKey: kubernetes.io/hostname
+      containers:
+        - name: pxload
+          image: alpine
+          volumeMounts:
+            - name: pxload
+              mountPath: /mnt
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while :; do
+                dd if=/dev/zero of=/mnt/testfile bs=4k count=1000000
+                sleep 1
+                dd if=/mnt/testfile of=/dev/null bs=4k count=1000000
+                sleep 1
+              done
+  volumeClaimTemplates:
+    - metadata:
+        name: pxload
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "px-csi-db"
+        resources:
+          requests:
+            storage: 4Gi
