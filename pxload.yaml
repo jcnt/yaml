@@ -45,7 +45,7 @@ spec:
         name: pxload
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: "px-csi-db"
+        storageClassName: "px-csi-r1"
         resources:
           requests:
-            storage: 4Gi
+            storage: 5Gi
