@@ -4,10 +4,10 @@ metadata:
   name: grafana-pvc
   namespace: grafana
 spec:
-  storageClassName: px-repl2-sc-volexp
+  storageClassName: px-csi-replicated
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 20Gi
 
