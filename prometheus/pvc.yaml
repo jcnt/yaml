@@ -8,5 +8,5 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
-  storageClassName: px-repl2-sc-volexp
+      storage: 20Gi
+  storageClassName: px-csi-replicated
